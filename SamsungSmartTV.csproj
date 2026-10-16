@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageId>JoshuaSmall.Qsys.SamsungSmartTV</PackageId>
+    <Version>1.0.0.2</Version>
+    <Title>Samsung Smart TV API</Title>
+    <Authors>Joshua Small</Authors>
+    <Description>Samsung Tizen Smart TV WebSocket remote and Frame Art Mode control for Q-SYS.</Description>
+    <PackageProjectUrl>https://github.com/joshua-small/qsys-samsung-smart-tv</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/joshua-small/qsys-samsung-smart-tv</RepositoryUrl>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageIconUrl>https://joshua-small.github.io/qsys-samsung-smart-tv/icon.png</PackageIconUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>Q-SYS;Plugin;SamsungSmartTV</PackageTags>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <NoWarn>NU5128</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="content/SamsungSmartTV.qplug" Pack="true" PackagePath="content/" />
+    <None Include="icon.png" Pack="true" PackagePath="/" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>

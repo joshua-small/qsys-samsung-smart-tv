@@ -1,0 +1,3213 @@
+-- Samsung Smart TV - Joshua Small - 10/2026
+-- External Tizen v2 WebSocket control, separate from the in-TV webapis SDK.
+PluginInfo = {
+  Name = "Samsung~Smart TV",
+  Version = "1.0.0.2",
+  BuildVersion = "1.0.0.2",
+  Id = "93bb7a51-4382-49b8-9133-0aaaf05d1a46",
+  Author = "Joshua Small",
+  Manufacturer = "Samsung",
+  Model = "Tizen Smart TV / Frame",
+  Description = "Local WebSocket remote and Frame Art Mode. Requires TV approval; model-dependent.",
+}
+
+--*** Design-time constants ***
+White = { 255, 255, 255 }
+Black = { 0, 0, 0 }
+PanelGray = { 230, 230, 230 }
+ReadoutGray = { 194, 194, 194 }
+SamsungBlue = { 20, 40, 160 }
+IndicatorGreen = { 0, 160, 0 }
+PageHeights = { 600, 585, 595, 445 }
+LogoSvg =
+  "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMiIgZGF0YS1uYW1lPSJMYXllciAyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MjguMjM3OCAxNjYuODg0OCI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogbm9uZTsKICAgICAgfQoKICAgICAgLmNscy0yIHsKICAgICAgICBmaWxsOiAjMTQyOGEwOwogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KICA8ZyBpZD0iTGF5ZXJfMS0yIiBkYXRhLW5hbWU9IkxheWVyIDEiPgogICAgPGcgaWQ9ImxvZ28iPgogICAgICA8cmVjdCBpZD0iY2FudmFzIiBjbGFzcz0iY2xzLTEiIHdpZHRoPSI2MjguMjM3OCIgaGVpZ2h0PSIxNjYuODg0OCIvPgogICAgICA8cGF0aCBpZD0idGV4dCIgY2xhc3M9ImNscy0yIiBkPSJNNjIuNDIwNyw2NC4yODY1Yy0uMzc3MS0xLjU2OTEtLjI4ODktMy4yMjY2LS4wNzkxLTQuMDkwMS41MzIyLTIuNDgxNCwyLjIxNjgtNS4yNDg0LDcuMTI4LTUuMjQ4NCw0LjU1NTMsMCw3LjIzNzMsMi44MzA4LDcuMjM3Myw3LjA3Mjl2NC44MTk5aDE5LjQyNTN2LTUuNDcwNGMwLTE2Ljk0MTEtMTUuMjc0NS0xOS42NDE0LTI2LjI4NTUtMTkuNjQxNC0xMy44MzMxLDAtMjUuMTM2Miw0LjU5MTctMjcuMjA0MSwxNy4zMDg4LS41NjU1LDMuNDkwOS0uNjYyNiw2LjU2MjUuMTU1MSwxMC40OTcyLDMuMzcyNiwxNS45MjIyLDMxLjA1MDYsMjAuNTI2MSwzNS4wNzY5LDMwLjYwMDcuNzU0MiwxLjg3My41MjU5LDQuMjc4NS4xNTIsNS43NTA0LS42Mzg3LDIuNjE4Mi0yLjM5NjIsNS4yNjA2LTcuNjA1NCw1LjI2MDYtNC44NjU0LDAtNy43NzUzLTIuODMzOS03Ljc3NTMtNy4wOTEybC0uMDI3NS03LjQ5M2gtMjAuODk3MnY1Ljk1NDFjMCwxNy40MTIyLDEzLjY3NDksMjIuNjQ4OCwyOC4zMTA4LDIyLjY0ODgsMTQuMDcwNCwwLDI1LjYyNTctNC43OTU3LDI3LjUxMTEtMTcuODI4OC45MzY3LTYuNzE3Ni4yMzQyLTExLjA5MDEtLjA4MjItMTIuNzQ3Ni0zLjI4Ny0xNi4zNDQ4LTMyLjgyMzQtMjEuMTg2LTM1LjA0MDItMzAuMzAyNVpNMzE1LjY5NDE5MjU5NTgsNjQuNDc4Yy0uMzQ2NTk5OTkxMi0xLjUzODUtLjI0NjI5OTk5MzgtMy4xNzE4LS4wNjY5OTk5OTgzLTQuMDI2Mi41NTY0OTk5ODU5LTIuNDkzMywyLjIzMjA5OTk0MzYtNS4yMTIsNy4wNTc4OTk4MjE3LTUuMjEyLDQuNDk3NzA3NTgwOCwwLDcuMTM0Mjk5ODE5OCwyLjgwMzcsNy4xMzQyOTk4MTk4LDcuMDEyNHY0Ljc2MjFoMTkuMjAwMDk5NTE1di01LjQyODFjMC0xNi43Nzk4LTE1LjA0MzM5OTYyLTE5LjQxNjMtMjUuOTM1Nzk5MzQ0OC0xOS40MTYzLTEzLjcxNzU5OTY1MzUsMC0yNC45MjAzOTkzNzA1LDQuNTIyLTI2Ljk2Njc5OTMxODgsMTcuMTQ3OC0uNTQxMTk5OTg2MywzLjQzNjItLjY3NTA5MzA5MDQsNi40ODYyLjE4NTU5OTk5NTMsMTAuMzc4NiwzLjMzNTg5OTkxNTcsMTUuNzQyNSwzMC43NDMzMDY5MTQzLDIwLjMxLDM0LjcyMDk5OTEyMjksMzAuMjY2LjcwMjQ5OTk4MjMsMS44ODU0LjUwMTU5OTk4NzMsNC4yOTA2LjE0Mjg5OTk5NjQsNS43MDc3LS41OTU5OTk5ODQ5LDIuNTkxMS0yLjMzODQ5OTk0MDksNS4xOTcxLTcuNTA1MDk5ODEwNCw1LjE5NzEtNC44NDY5OTk4Nzc2LDAtNy43NjM0OTIzOTQ2LTIuNzg1Ny03Ljc2MzQ5MjM5NDYtNi45ODUxbC0uMDA1OTA3NDA5Mi03LjQ3NDVoLTIwLjY2NTg5OTQ3Nzl2NS45NDE5YzAsMTcuMjE0NCwxMy40ODMzOTk2NTk0LDIyLjQwODQsMjguMDA2NTk5MjkyNSwyMi40MDg0LDEzLjkwODk5OTY0ODYsMCwyNS4zOTc2OTkzNTg0LTQuNzUzLDI3LjI0MDQ5OTMxMTgtMTcuNjM3My44Nzg3MDgyODI4LTYuNjU2Ni4yMTU3OTk5OTQ1LTEwLjk5MjctLjEzNjk5OTk5NjUtMTIuNjI1Ni0zLjIyMDM5OTkxODYtMTYuMTQ3My0zMi40MzEwOTkxODA3LTIxLjAwMzctMzQuNjQxODk5MTI0OS0zMC4wMTY5Wk00OTIuNTMxOCwxMDYuOTEwOWwtMTguMzM5ODExNDA4Mi02Mi43MDA1aC0yOC45MDA1OTkyNjk5djc3LjA2NTVoMTkuMTE3OTk5NTE3bC0xLjEwOTc5OTk3Mi02NC43MDcxLDE5LjY5NTg5OTUwMjQsNjQuNzA3MWgyNy43MTc1OTkyOTk4VjQ0LjIxMDRoLTE5LjI0Mjc5OTUxMzlsMS4wNjE1MTE4NDQ2LDYyLjcwMDVaTTEyNS4wOTY1OTc0MTA3LDQ0LjIxMDRsLTE0LjQyNTk5NzQxMDcsNzcuODc3NmgyMS4wMzcwOTcyNDM3bDEwLjg3MTE5OTcyNTQtNzIuMDkzOSwxMC42MDk1OTk3MzIsNzIuMDkzOWgyMC44OTA5OTk0NzIybC0xNC4zNjUyOTk2MzcxLTc3Ljg3NzZoLTM0LjYxNzU5OTEyNTVaTTI0Mi43Mjc4LDQ0LjIxMDRsLTkuODI1MjA1MzEyNyw2MC44NzU4LTkuODE4OTk5NzUyLTYwLjg3NThoLTMxLjc3MTE5OTE5NzRsLTEuNjg0Njk5OTU3NCw3Ny44Nzc2aDE5LjQ2NDU5OTUwODNsLjUyNjI5OTk4NjctNzIuMDkzOSwxMy4zOTIwOTk2NjE3LDcyLjA5MzloMTkuNzQ3NTk5NTAxMWwxMy40MDQzOTk2NjE0LTcyLjA5MzkuNTI4OTk5OTg2Niw3Mi4wOTM5aDE5LjUxMzQ5OTUwN2wtMS43NDI1OTk5NTYtNzcuODc3NmgtMzEuNzM0NzkzNjM3NFpNNDIzLjY5Nzg4OTg2NzQsNDQuMjEwNGgtMTkuNjk1ODk5NTAyNHY1Ny42MTNjLjAzMDQ5OTk5OTIsMS4wMDMzLDAsMi4xMzE1LS4xNzM0OTk5OTU2LDIuOTU4OC0uNDEwMzk5OTg5NiwxLjkzNDEtMi4wNDk0OTk5NDgyLDUuNjU2MS03LjQ4MzU5OTgxMDksNS42NTYxLTUuMzYzODk5ODY0NSwwLTcuMDQ1Njk5ODIyLTMuNzIyLTcuNDI1ODk5ODEyNC01LjY1NjEtLjE5NzQ5OTk5NS0uODI3My0uMjIxNzk5OTk0NC0xLjk1NTUtLjE5NzQ5OTk5NS0yLjk1ODh2LTU3LjYxM2gtMTkuNjg5OTk5NTAyNnY1NS44MjQ3Yy0uMDI0Mjk5OTk5NCwxLjQzODYuMDg4MDk5OTk3OCw0LjM3OTEuMTczNDk5OTk1Niw1LjE0ODUsMS4zNTkxOTk5NjU3LDE0LjU0NzUsMTIuODIzNTk5Njc2LDE5LjI3LDI3LjEzOTg5OTMxNDQsMTkuMjcsMTQuMzQ0MDk5NjM3NiwwLDI1LjgwMTk5OTM0ODItNC43MjI1LDI3LjE4NTc5OTMxMzItMTkuMjcuMTA5Mjk5OTk3Mi0uNzY5NC4yNTIxOTk5OTM2LTMuNzA5OS4xNjcxOTk5OTU4LTUuMTQ4NXYtNTUuODI0N1pNNTU4LjkzMjgsNzguMzc1djExLjM1NzloNy45ODI0ODYyNDk1djExLjI2OTRjLjAyNDE5OTk5OTQsMS4wMDY0LS4wMzA1OTk5OTkyLDIuMDkyMi0uMjAzOTk5OTk0OCwyLjk2MTktLjMxNjA5OTk5MiwyLjEwMTMtMi4zMTM4OTk5NDE1LDUuNjgwNC03Ljk3OTI5OTc5ODQsNS42ODA0LTUuNjMxNzk5ODU3NywwLTcuNTkzMTg2NDU2Mi0zLjU3OTEtNy45MzM1OTk3OTk2LTUuNjgwNC0uMTQyODk5OTk2NC0uODY5Ny0uMjAzODk5OTk0OC0xLjk1NTUtLjIwMzg5OTk5NDgtMi45NjE5di0zNS41OTM4YzAtMS4yNTkuMDg1MzEzMzM4Mi0yLjYzNjMuMzUyNzk5OTkxMS0zLjY3OTQuMzg2MDk5OTkwMi0xLjg5NzYsMi4wNjc4OTk5NDc4LTUuNjM4LDcuNzQyMjk5ODA0NC01LjYzOCw1Ljk1Njg5OTg0OTUsMCw3LjQ0NDA5OTgxMTksMy45NDQsNy43ODQ2OTk4MDMzLDUuNjM4LjIyNDc5OTk5NDMsMS4xMjE5LjIzNjk5OTk5NCwzLjAwNDMuMjM2OTk5OTk0LDMuMDA0M3Y0LjMyMTFoMTkuNjEzOTk5NTA0NXYtMi41NTQzcy4wODgwOTk5OTc4LTIuNjY2Ny0uMTQ5MDk5OTk2Mi01LjE1NDRjLTEuNDc0Nzk5OTYyNy0xNC42MDg1LTEzLjUxMDg5OTY1ODctMTkuMjMwNC0yNy4zMTMzODU3NjI5LTE5LjIzMDQtMTMuODI2OTEzMTk3OCwwLTI1LjYxOTUxMjg5OTksNC42NjQ2LTI3LjMzNzcxMjg1NjUsMTkuMjMwNC0uMTU1MDk5OTk2MSwxLjMzMjEtLjM5MjM5OTk5MDEsMy43MjgyLS4zOTIzOTk5OTAxLDUuMTU0NHYzMi43NDE1YzAsMS40MjYyLjA0NTc5OTk5ODgsMi41My4zMTA0OTk5OTIyLDUuMTM2MSwxLjI4MDA5OTk2NzcsMTQuMjA3LDEzLjU5MjY5OTY1NjYsMTkuMjQyOCwyNy4zNjQ3OTkzMDg3LDE5LjI0MjgsMTMuODU3Mjk5NjQ5OSwwLDI2LjA4NDg5OTM0MS01LjAzNTgsMjcuMzg2NDk5MzA4Mi0xOS4yNDI4LjIzMTA5OTk5NDItMi42MDYxLjI1NTM5OTk5MzUtMy43MDk5LjI4NTg5OTk5MjgtNS4xMzYxdi0yMC44NjY3aC0yNy41NDc1ODU3NTUyWiIvPgogICAgPC9nPgogIDwvZz4KPC9zdmc+"
+
+--*** Remote key protocol names ***
+RemoteKeys = {
+  PowerOff = "KEY_POWEROFF",
+  PowerToggle = "KEY_POWER",
+  VolumeUp = "KEY_VOLUP",
+  VolumeDown = "KEY_VOLDOWN",
+  MuteToggle = "KEY_MUTE",
+  Source = "KEY_SOURCE",
+  Tv = "KEY_TV",
+  Hdmi = "KEY_HDMI",
+  Home = "KEY_HOME",
+  Up = "KEY_UP",
+  Menu = "KEY_MENU",
+  Left = "KEY_LEFT",
+  Enter = "KEY_ENTER",
+  Right = "KEY_RIGHT",
+  Return = "KEY_RETURN",
+  Down = "KEY_DOWN",
+  Exit = "KEY_EXIT",
+  Digit1 = "KEY_1",
+  Digit2 = "KEY_2",
+  Digit3 = "KEY_3",
+  Digit4 = "KEY_4",
+  Digit5 = "KEY_5",
+  Digit6 = "KEY_6",
+  Digit7 = "KEY_7",
+  Digit8 = "KEY_8",
+  Digit9 = "KEY_9",
+  Digit0 = "KEY_0",
+  ChannelUp = "KEY_CHUP",
+  ChannelDown = "KEY_CHDOWN",
+  Guide = "KEY_GUIDE",
+  Rewind = "KEY_REWIND",
+  Play = "KEY_PLAY",
+  Pause = "KEY_PAUSE",
+  Stop = "KEY_STOP",
+  Forward = "KEY_FF",
+  Red = "KEY_RED",
+  Green = "KEY_GREEN",
+  Yellow = "KEY_YELLOW",
+  Blue = "KEY_BLUE",
+}
+
+--*** Reserved design-time functions ***
+function GetColor(props)
+  return SamsungBlue
+end
+
+function GetPrettyName(props)
+  return "Samsung Smart TV " .. PluginInfo.Version
+end
+
+function GetProperties()
+  return {
+    {
+      Name = "Transport",
+      Type = "enum",
+      Choices = { "TLS (8002)", "Plain (8001)" },
+      Value = "TLS (8002)",
+    },
+    { Name = "Frame Art Mode", Type = "boolean", Value = true },
+    { Name = "Command Interval", Type = "double", Min = 0.1, Max = 2, Value = 0.3 },
+    {
+      Name = "App Launch Type",
+      Type = "enum",
+      Choices = { "DEEP_LINK", "NATIVE_LAUNCH" },
+      Value = "DEEP_LINK",
+    },
+    {
+      Name = "Debug Print",
+      Type = "enum",
+      Choices = { "None", "Tx", "Rx", "Tx/Rx", "Function Calls", "All" },
+      Value = "None",
+    },
+  }
+end
+
+function RectifyProperties(props)
+  props["Debug Print"].IsHidden = not props.plugin_show_debug.Value
+  return props
+end
+
+function GetPages(props)
+  return { { name = "Setup" }, { name = "Controls" }, { name = "Remote" }, { name = "Frame" } }
+end
+
+function GetComponents(props)
+  return {
+    {
+      Name = "PairingStorage",
+      Type = "custom_controls",
+      Properties = { type_1 = 13, count_1 = 2 },
+    },
+  }
+end
+
+function GetControls(props)
+  return {
+    {
+      Name = "IPAddress",
+      ControlType = "Text",
+      UserPin = true,
+      PinStyle = "Input",
+    },
+    {
+      Name = "ClientName",
+      ControlType = "Text",
+      UserPin = true,
+      PinStyle = "Input",
+    },
+    {
+      Name = "MACAddress",
+      ControlType = "Text",
+      UserPin = true,
+      PinStyle = "Input",
+    },
+    {
+      Name = "WakeAddress",
+      ControlType = "Text",
+      UserPin = true,
+      PinStyle = "Input",
+    },
+    {
+      Name = "Connect",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Disconnect",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "TokenSaved",
+      ControlType = "Indicator",
+      UserPin = true,
+      PinStyle = "Output",
+      IndicatorType = "Led",
+    },
+    {
+      Name = "ForgetToken",
+      ControlType = "Button",
+      UserPin = false,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Status",
+      ControlType = "Indicator",
+      UserPin = true,
+      PinStyle = "Output",
+      IndicatorType = "Status",
+    },
+    {
+      Name = "Connected",
+      ControlType = "Indicator",
+      UserPin = true,
+      PinStyle = "Output",
+      IndicatorType = "Led",
+    },
+    {
+      Name = "LastCommand",
+      ControlType = "Indicator",
+      IndicatorType = "Text",
+      UserPin = true,
+      PinStyle = "Output",
+    },
+    {
+      Name = "LastEvent",
+      ControlType = "Indicator",
+      IndicatorType = "Text",
+      UserPin = true,
+      PinStyle = "Output",
+    },
+    {
+      Name = "PowerOn",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "PowerOff",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "PowerToggle",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "VolumeUp",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "VolumeDown",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "MuteToggle",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Source",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Tv",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Hdmi",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "AppId",
+      ControlType = "Text",
+      UserPin = true,
+      PinStyle = "Input",
+    },
+    {
+      Name = "LaunchApp",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Home",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Up",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Menu",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Left",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Enter",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Right",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Return",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Down",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Exit",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit1",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit2",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit3",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit4",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit5",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit6",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit7",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit8",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit9",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Digit0",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "ChannelUp",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "ChannelDown",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Guide",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Rewind",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Play",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Pause",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Stop",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Forward",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Red",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Green",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Yellow",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "Blue",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "CustomKey",
+      ControlType = "Text",
+      UserPin = true,
+      PinStyle = "Input",
+    },
+    {
+      Name = "SendKey",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "ArtOn",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "ArtOff",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "ArtRefresh",
+      ControlType = "Button",
+      UserPin = true,
+      PinStyle = "Input",
+      ButtonType = "Trigger",
+    },
+    {
+      Name = "ArtState",
+      ControlType = "Indicator",
+      IndicatorType = "Text",
+      UserPin = true,
+      PinStyle = "Output",
+    },
+    {
+      Name = "ArtValid",
+      ControlType = "Indicator",
+      UserPin = true,
+      PinStyle = "Output",
+      IndicatorType = "Led",
+    },
+    {
+      Name = "ArtStatus",
+      ControlType = "Indicator",
+      UserPin = true,
+      PinStyle = "Output",
+      IndicatorType = "Status",
+    },
+  }
+end
+
+function GetControlLayout(props)
+  local layout = {}
+  local graphics = {}
+  layout["IPAddress"] = {
+    PrettyName = "Setup~TV address",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ClientName"] = {
+    PrettyName = "Setup~Controller name",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["MACAddress"] = {
+    PrettyName = "Setup~TV MAC for wake",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["WakeAddress"] = {
+    PrettyName = "Setup~Wake broadcast",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Connect"] = {
+    PrettyName = "Setup~Connect and pair",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Disconnect"] = {
+    PrettyName = "Setup~Disconnect",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["TokenSaved"] = {
+    PrettyName = "Setup~Pairing token stored",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ForgetToken"] = {
+    PrettyName = "Setup~Forget pairing token",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Status"] = {
+    PrettyName = "Setup~Remote connection status",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Connected"] = {
+    PrettyName = "Setup~Remote authorized",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["LastCommand"] = {
+    PrettyName = "Diagnostics~Last transmitted command",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["LastEvent"] = {
+    PrettyName = "Diagnostics~Last event or error",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["PowerOn"] = {
+    PrettyName = "Power~Wake via Wake-on-LAN",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["PowerOff"] = {
+    PrettyName = "Power~Power Off key",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["PowerToggle"] = {
+    PrettyName = "Power~Power / Art key",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["VolumeUp"] = {
+    PrettyName = "Audio~Volume Up",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["VolumeDown"] = {
+    PrettyName = "Audio~Volume Down",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["MuteToggle"] = {
+    PrettyName = "Audio~Mute Toggle",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Source"] = {
+    PrettyName = "Input~Source menu",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Tv"] = {
+    PrettyName = "Input~TV tuner",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Hdmi"] = {
+    PrettyName = "Input~HDMI key",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["AppId"] = {
+    PrettyName = "Applications~App ID",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["LaunchApp"] = {
+    PrettyName = "Applications~Launch App ID",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Home"] = {
+    PrettyName = "Remote~Home",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Up"] = {
+    PrettyName = "Remote~Up",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Menu"] = {
+    PrettyName = "Remote~Menu",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Left"] = {
+    PrettyName = "Remote~Left",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Enter"] = {
+    PrettyName = "Remote~Enter",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Right"] = {
+    PrettyName = "Remote~Right",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Return"] = {
+    PrettyName = "Remote~Return",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Down"] = {
+    PrettyName = "Remote~Down",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Exit"] = {
+    PrettyName = "Remote~Exit",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit1"] = {
+    PrettyName = "Remote~1",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit2"] = {
+    PrettyName = "Remote~2",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit3"] = {
+    PrettyName = "Remote~3",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit4"] = {
+    PrettyName = "Remote~4",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit5"] = {
+    PrettyName = "Remote~5",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit6"] = {
+    PrettyName = "Remote~6",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit7"] = {
+    PrettyName = "Remote~7",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit8"] = {
+    PrettyName = "Remote~8",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit9"] = {
+    PrettyName = "Remote~9",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Digit0"] = {
+    PrettyName = "Remote~0",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ChannelUp"] = {
+    PrettyName = "Remote~ChannelUp",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ChannelDown"] = {
+    PrettyName = "Remote~ChannelDown",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Guide"] = {
+    PrettyName = "Remote~Guide",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Rewind"] = {
+    PrettyName = "Remote~Rewind",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Play"] = {
+    PrettyName = "Remote~Play",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Pause"] = {
+    PrettyName = "Remote~Pause",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Stop"] = {
+    PrettyName = "Remote~Stop",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Forward"] = {
+    PrettyName = "Remote~Forward",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Red"] = {
+    PrettyName = "Remote~Red",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Green"] = {
+    PrettyName = "Remote~Green",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Yellow"] = {
+    PrettyName = "Remote~Yellow",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["Blue"] = {
+    PrettyName = "Remote~Blue",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["CustomKey"] = {
+    PrettyName = "Remote~Additional KEY name",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["SendKey"] = {
+    PrettyName = "Remote~Send additional key",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ArtOn"] = {
+    PrettyName = "Frame~Art Mode On",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ArtOff"] = {
+    PrettyName = "Frame~Art Mode Off",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ArtRefresh"] = {
+    PrettyName = "Frame~Read Art Mode",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ArtState"] = {
+    PrettyName = "Frame~Reported Art Mode",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ArtValid"] = {
+    PrettyName = "Frame~Art Mode feedback valid",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  layout["ArtStatus"] = {
+    PrettyName = "Frame~Art channel status",
+    Style = "None",
+    Position = { 0, 0 },
+    Size = { 1, 1 },
+    ZOrder = 4,
+  }
+  if props.page_index.Value == 1 then
+    LayoutSetup(layout, graphics)
+  elseif props.page_index.Value == 2 then
+    LayoutControls(layout, graphics)
+  elseif props.page_index.Value == 3 then
+    LayoutRemote(layout, graphics)
+  else
+    LayoutFrame(layout, graphics)
+  end
+  return layout, graphics
+end
+
+--*** Direct native page layouts ***
+function LayoutSetup(layout, graphics)
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 0, 0 },
+    Size = { 400, 600 },
+    ZOrder = 1,
+    Fill = White,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 0, 0 },
+    Size = { 400, 100 },
+    ZOrder = 2,
+    Fill = PanelGray,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 5, 130 },
+    Size = { 390, 445 },
+    ZOrder = 3,
+    Fill = PanelGray,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "Svg",
+    Position = { 12.5, 0 },
+    Size = { 375, 99.61482737905934 },
+    ZOrder = 4,
+    Image = LogoSvg,
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 7, 106 },
+    Size = { 380, 22 },
+    ZOrder = 5,
+    Text = "Setup",
+    Font = "Roboto",
+    FontSize = 20,
+    Color = Black,
+    HTextAlign = "Left",
+    FontStyle = "Medium",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 205, 578 },
+    Size = { 180, 16 },
+    ZOrder = 6,
+    Text = "Version " .. PluginInfo.Version,
+    Font = "Roboto",
+    FontSize = 10,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 140 },
+    Size = { 330, 16 },
+    ZOrder = 7,
+    Text = "Connection",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 170 },
+    Size = { 140, 20 },
+    ZOrder = 8,
+    Text = "TV address:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 195 },
+    Size = { 140, 20 },
+    ZOrder = 9,
+    Text = "Controller name:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 220 },
+    Size = { 140, 20 },
+    ZOrder = 10,
+    Text = "TV MAC for wake:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 245 },
+    Size = { 140, 20 },
+    ZOrder = 11,
+    Text = "Wake broadcast:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 270 },
+    Size = { 140, 20 },
+    ZOrder = 12,
+    Text = "Connect / Pair:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 295 },
+    Size = { 140, 20 },
+    ZOrder = 13,
+    Text = "Token stored:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 320 },
+    Size = { 140, 20 },
+    ZOrder = 14,
+    Text = "Forget token:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 25, 345 },
+    Size = { 350, 20 },
+    ZOrder = 15,
+    Text = "Approve the controller on the TV when prompted.",
+    Font = "Roboto",
+    FontSize = 11,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 380 },
+    Size = { 330, 16 },
+    ZOrder = 16,
+    Text = "Connection Status",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 465 },
+    Size = { 140, 20 },
+    ZOrder = 17,
+    Text = "Remote authorized:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 490 },
+    Size = { 140, 20 },
+    ZOrder = 18,
+    Text = "Last sent:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 515 },
+    Size = { 140, 20 },
+    ZOrder = 19,
+    Text = "Last event:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 25, 545 },
+    Size = { 350, 20 },
+    ZOrder = 20,
+    Text = "Connection status does not indicate screen power.",
+    Font = "Roboto",
+    FontSize = 11,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  layout["IPAddress"] = {
+    PrettyName = "Setup~TV address",
+    Position = { 180, 170 },
+    Size = { 185, 20 },
+    ZOrder = 1000,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Normal",
+    HTextAlign = "Left",
+  }
+  layout["ClientName"] = {
+    PrettyName = "Setup~Controller name",
+    Position = { 180, 195 },
+    Size = { 185, 20 },
+    ZOrder = 1001,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Normal",
+    HTextAlign = "Left",
+  }
+  layout["MACAddress"] = {
+    PrettyName = "Setup~TV MAC for wake",
+    Position = { 180, 220 },
+    Size = { 185, 20 },
+    ZOrder = 1002,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Normal",
+    HTextAlign = "Left",
+  }
+  layout["WakeAddress"] = {
+    PrettyName = "Setup~Wake broadcast",
+    Position = { 180, 245 },
+    Size = { 185, 20 },
+    ZOrder = 1003,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Normal",
+    HTextAlign = "Left",
+  }
+  layout["Connect"] = {
+    PrettyName = "Setup~Connect and pair",
+    Position = { 180, 270 },
+    Size = { 45, 20 },
+    ZOrder = 1004,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["Disconnect"] = {
+    PrettyName = "Setup~Disconnect",
+    Position = { 330, 270 },
+    Size = { 45, 20 },
+    ZOrder = 1005,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Stop",
+  }
+  layout["TokenSaved"] = {
+    PrettyName = "Setup~Pairing token stored",
+    Position = { 180, 295 },
+    Size = { 20, 20 },
+    ZOrder = 1006,
+    Color = IndicatorGreen,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Led",
+    TextBoxStyle = "Normal",
+  }
+  layout["ForgetToken"] = {
+    PrettyName = "Setup~Forget pairing token",
+    Position = { 180, 320 },
+    Size = { 45, 20 },
+    ZOrder = 1007,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["Status"] = {
+    PrettyName = "Setup~Remote connection status",
+    Position = { 25, 410 },
+    Size = { 350, 44 },
+    ZOrder = 1008,
+    Color = ReadoutGray,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Normal",
+  }
+  layout["Connected"] = {
+    PrettyName = "Setup~Remote authorized",
+    Position = { 180, 465 },
+    Size = { 20, 20 },
+    ZOrder = 1009,
+    Color = IndicatorGreen,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Led",
+    TextBoxStyle = "Normal",
+  }
+  layout["LastCommand"] = {
+    PrettyName = "Diagnostics~Last transmitted command",
+    Position = { 180, 490 },
+    Size = { 185, 20 },
+    ZOrder = 1010,
+    Color = ReadoutGray,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Meter",
+    HTextAlign = "Left",
+  }
+  layout["LastEvent"] = {
+    PrettyName = "Diagnostics~Last event or error",
+    Position = { 180, 515 },
+    Size = { 185, 20 },
+    ZOrder = 1011,
+    Color = ReadoutGray,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Meter",
+    HTextAlign = "Left",
+  }
+end
+
+function LayoutControls(layout, graphics)
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 0, 0 },
+    Size = { 400, 585 },
+    ZOrder = 1,
+    Fill = White,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 0, 0 },
+    Size = { 400, 100 },
+    ZOrder = 2,
+    Fill = PanelGray,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 5, 130 },
+    Size = { 390, 430 },
+    ZOrder = 3,
+    Fill = PanelGray,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "Svg",
+    Position = { 12.5, 0 },
+    Size = { 375, 99.61482737905934 },
+    ZOrder = 4,
+    Image = LogoSvg,
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 7, 106 },
+    Size = { 380, 22 },
+    ZOrder = 5,
+    Text = "Controls",
+    Font = "Roboto",
+    FontSize = 20,
+    Color = Black,
+    HTextAlign = "Left",
+    FontStyle = "Medium",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 205, 563 },
+    Size = { 180, 16 },
+    ZOrder = 6,
+    Text = "Version " .. PluginInfo.Version,
+    Font = "Roboto",
+    FontSize = 10,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 140 },
+    Size = { 330, 16 },
+    ZOrder = 7,
+    Text = "Power",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 170 },
+    Size = { 140, 20 },
+    ZOrder = 8,
+    Text = "Power On (wake):",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 195 },
+    Size = { 140, 20 },
+    ZOrder = 9,
+    Text = "Power Off key:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 220 },
+    Size = { 140, 20 },
+    ZOrder = 10,
+    Text = "Power / Art key:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 250 },
+    Size = { 330, 16 },
+    ZOrder = 11,
+    Text = "Audio",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 280 },
+    Size = { 140, 20 },
+    ZOrder = 12,
+    Text = "Volume Up:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 305 },
+    Size = { 140, 20 },
+    ZOrder = 13,
+    Text = "Volume Down:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 330 },
+    Size = { 140, 20 },
+    ZOrder = 14,
+    Text = "Mute Toggle:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 360 },
+    Size = { 330, 16 },
+    ZOrder = 15,
+    Text = "Input",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 390 },
+    Size = { 140, 20 },
+    ZOrder = 16,
+    Text = "Source menu:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 415 },
+    Size = { 140, 20 },
+    ZOrder = 17,
+    Text = "TV tuner:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 440 },
+    Size = { 140, 20 },
+    ZOrder = 18,
+    Text = "HDMI key:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 470 },
+    Size = { 330, 16 },
+    ZOrder = 19,
+    Text = "Applications",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 500 },
+    Size = { 90, 20 },
+    ZOrder = 20,
+    Text = "App ID:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 25, 530 },
+    Size = { 350, 20 },
+    ZOrder = 21,
+    Text = "Commands depend on the TV model and firmware.",
+    Font = "Roboto",
+    FontSize = 11,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  layout["PowerOn"] = {
+    PrettyName = "Power~Wake via Wake-on-LAN",
+    Position = { 180, 170 },
+    Size = { 45, 20 },
+    ZOrder = 1000,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["PowerOff"] = {
+    PrettyName = "Power~Power Off key",
+    Position = { 180, 195 },
+    Size = { 45, 20 },
+    ZOrder = 1001,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["PowerToggle"] = {
+    PrettyName = "Power~Power / Art key",
+    Position = { 180, 220 },
+    Size = { 45, 20 },
+    ZOrder = 1002,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["VolumeUp"] = {
+    PrettyName = "Audio~Volume Up",
+    Position = { 180, 280 },
+    Size = { 45, 20 },
+    ZOrder = 1003,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["VolumeDown"] = {
+    PrettyName = "Audio~Volume Down",
+    Position = { 180, 305 },
+    Size = { 45, 20 },
+    ZOrder = 1004,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["MuteToggle"] = {
+    PrettyName = "Audio~Mute Toggle",
+    Position = { 180, 330 },
+    Size = { 45, 20 },
+    ZOrder = 1005,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["Source"] = {
+    PrettyName = "Input~Source menu",
+    Position = { 180, 390 },
+    Size = { 45, 20 },
+    ZOrder = 1006,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["Tv"] = {
+    PrettyName = "Input~TV tuner",
+    Position = { 180, 415 },
+    Size = { 45, 20 },
+    ZOrder = 1007,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["Hdmi"] = {
+    PrettyName = "Input~HDMI key",
+    Position = { 180, 440 },
+    Size = { 45, 20 },
+    ZOrder = 1008,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["AppId"] = {
+    PrettyName = "Applications~App ID",
+    Position = { 130, 500 },
+    Size = { 180, 20 },
+    ZOrder = 1009,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Normal",
+    HTextAlign = "Left",
+  }
+  layout["LaunchApp"] = {
+    PrettyName = "Applications~Launch App ID",
+    Position = { 325, 500 },
+    Size = { 50, 20 },
+    ZOrder = 1010,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Launch",
+  }
+end
+
+function LayoutRemote(layout, graphics)
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 0, 0 },
+    Size = { 400, 595 },
+    ZOrder = 1,
+    Fill = White,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 0, 0 },
+    Size = { 400, 100 },
+    ZOrder = 2,
+    Fill = PanelGray,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 5, 130 },
+    Size = { 390, 440 },
+    ZOrder = 3,
+    Fill = PanelGray,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "Svg",
+    Position = { 12.5, 0 },
+    Size = { 375, 99.61482737905934 },
+    ZOrder = 4,
+    Image = LogoSvg,
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 7, 106 },
+    Size = { 380, 22 },
+    ZOrder = 5,
+    Text = "Remote",
+    Font = "Roboto",
+    FontSize = 20,
+    Color = Black,
+    HTextAlign = "Left",
+    FontStyle = "Medium",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 205, 573 },
+    Size = { 180, 16 },
+    ZOrder = 6,
+    Text = "Version " .. PluginInfo.Version,
+    Font = "Roboto",
+    FontSize = 10,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 140 },
+    Size = { 330, 16 },
+    ZOrder = 7,
+    Text = "Navigation",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 260 },
+    Size = { 330, 16 },
+    ZOrder = 8,
+    Text = "Channel / Keypad",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 410 },
+    Size = { 330, 16 },
+    ZOrder = 9,
+    Text = "Playback / Color Keys",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 510 },
+    Size = { 330, 16 },
+    ZOrder = 10,
+    Text = "Additional Remote Key",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  layout["Home"] = {
+    PrettyName = "Remote~Home",
+    Position = { 65, 170 },
+    Size = { 75, 20 },
+    ZOrder = 1000,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Home",
+  }
+  layout["Up"] = {
+    PrettyName = "Remote~Up",
+    Position = { 160, 170 },
+    Size = { 75, 20 },
+    ZOrder = 1001,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Up",
+  }
+  layout["Menu"] = {
+    PrettyName = "Remote~Menu",
+    Position = { 255, 170 },
+    Size = { 75, 20 },
+    ZOrder = 1002,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Menu",
+  }
+  layout["Left"] = {
+    PrettyName = "Remote~Left",
+    Position = { 65, 195 },
+    Size = { 75, 20 },
+    ZOrder = 1003,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Left",
+  }
+  layout["Enter"] = {
+    PrettyName = "Remote~Enter",
+    Position = { 160, 195 },
+    Size = { 75, 20 },
+    ZOrder = 1004,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Enter",
+  }
+  layout["Right"] = {
+    PrettyName = "Remote~Right",
+    Position = { 255, 195 },
+    Size = { 75, 20 },
+    ZOrder = 1005,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Right",
+  }
+  layout["Return"] = {
+    PrettyName = "Remote~Return",
+    Position = { 65, 220 },
+    Size = { 75, 20 },
+    ZOrder = 1006,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Return",
+  }
+  layout["Down"] = {
+    PrettyName = "Remote~Down",
+    Position = { 160, 220 },
+    Size = { 75, 20 },
+    ZOrder = 1007,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Down",
+  }
+  layout["Exit"] = {
+    PrettyName = "Remote~Exit",
+    Position = { 255, 220 },
+    Size = { 75, 20 },
+    ZOrder = 1008,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Exit",
+  }
+  layout["Digit1"] = {
+    PrettyName = "Remote~1",
+    Position = { 65, 290 },
+    Size = { 50, 20 },
+    ZOrder = 1009,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "1",
+  }
+  layout["Digit2"] = {
+    PrettyName = "Remote~2",
+    Position = { 127, 290 },
+    Size = { 50, 20 },
+    ZOrder = 1010,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "2",
+  }
+  layout["Digit3"] = {
+    PrettyName = "Remote~3",
+    Position = { 189, 290 },
+    Size = { 50, 20 },
+    ZOrder = 1011,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "3",
+  }
+  layout["Digit4"] = {
+    PrettyName = "Remote~4",
+    Position = { 65, 315 },
+    Size = { 50, 20 },
+    ZOrder = 1012,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "4",
+  }
+  layout["Digit5"] = {
+    PrettyName = "Remote~5",
+    Position = { 127, 315 },
+    Size = { 50, 20 },
+    ZOrder = 1013,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "5",
+  }
+  layout["Digit6"] = {
+    PrettyName = "Remote~6",
+    Position = { 189, 315 },
+    Size = { 50, 20 },
+    ZOrder = 1014,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "6",
+  }
+  layout["Digit7"] = {
+    PrettyName = "Remote~7",
+    Position = { 65, 340 },
+    Size = { 50, 20 },
+    ZOrder = 1015,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "7",
+  }
+  layout["Digit8"] = {
+    PrettyName = "Remote~8",
+    Position = { 127, 340 },
+    Size = { 50, 20 },
+    ZOrder = 1016,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "8",
+  }
+  layout["Digit9"] = {
+    PrettyName = "Remote~9",
+    Position = { 189, 340 },
+    Size = { 50, 20 },
+    ZOrder = 1017,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "9",
+  }
+  layout["Digit0"] = {
+    PrettyName = "Remote~0",
+    Position = { 127, 365 },
+    Size = { 50, 20 },
+    ZOrder = 1018,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "0",
+  }
+  layout["ChannelUp"] = {
+    PrettyName = "Remote~ChannelUp",
+    Position = { 270, 290 },
+    Size = { 65, 20 },
+    ZOrder = 1019,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "CH +",
+  }
+  layout["ChannelDown"] = {
+    PrettyName = "Remote~ChannelDown",
+    Position = { 270, 315 },
+    Size = { 65, 20 },
+    ZOrder = 1020,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "CH -",
+  }
+  layout["Guide"] = {
+    PrettyName = "Remote~Guide",
+    Position = { 270, 340 },
+    Size = { 65, 20 },
+    ZOrder = 1021,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Guide",
+  }
+  layout["Rewind"] = {
+    PrettyName = "Remote~Rewind",
+    Position = { 25, 440 },
+    Size = { 65, 20 },
+    ZOrder = 1022,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Rewind",
+  }
+  layout["Play"] = {
+    PrettyName = "Remote~Play",
+    Position = { 96, 440 },
+    Size = { 65, 20 },
+    ZOrder = 1023,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Play",
+  }
+  layout["Pause"] = {
+    PrettyName = "Remote~Pause",
+    Position = { 167, 440 },
+    Size = { 65, 20 },
+    ZOrder = 1024,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Pause",
+  }
+  layout["Stop"] = {
+    PrettyName = "Remote~Stop",
+    Position = { 238, 440 },
+    Size = { 65, 20 },
+    ZOrder = 1025,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Stop",
+  }
+  layout["Forward"] = {
+    PrettyName = "Remote~Forward",
+    Position = { 309, 440 },
+    Size = { 65, 20 },
+    ZOrder = 1026,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Forward",
+  }
+  layout["Red"] = {
+    PrettyName = "Remote~Red",
+    Position = { 45, 470 },
+    Size = { 70, 20 },
+    ZOrder = 1027,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Red",
+  }
+  layout["Green"] = {
+    PrettyName = "Remote~Green",
+    Position = { 125, 470 },
+    Size = { 70, 20 },
+    ZOrder = 1028,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Green",
+  }
+  layout["Yellow"] = {
+    PrettyName = "Remote~Yellow",
+    Position = { 205, 470 },
+    Size = { 70, 20 },
+    ZOrder = 1029,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Yellow",
+  }
+  layout["Blue"] = {
+    PrettyName = "Remote~Blue",
+    Position = { 285, 470 },
+    Size = { 70, 20 },
+    ZOrder = 1030,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Blue",
+  }
+  layout["CustomKey"] = {
+    PrettyName = "Remote~Additional KEY name",
+    Position = { 25, 540 },
+    Size = { 260, 20 },
+    ZOrder = 1031,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Normal",
+    HTextAlign = "Left",
+  }
+  layout["SendKey"] = {
+    PrettyName = "Remote~Send additional key",
+    Position = { 310, 540 },
+    Size = { 65, 20 },
+    ZOrder = 1032,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+    Legend = "Send",
+  }
+end
+
+function LayoutFrame(layout, graphics)
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 0, 0 },
+    Size = { 400, 445 },
+    ZOrder = 1,
+    Fill = White,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 0, 0 },
+    Size = { 400, 100 },
+    ZOrder = 2,
+    Fill = PanelGray,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "GroupBox",
+    Position = { 5, 130 },
+    Size = { 390, 290 },
+    ZOrder = 3,
+    Fill = PanelGray,
+    StrokeWidth = 0,
+  })
+  table.insert(graphics, {
+    Type = "Svg",
+    Position = { 12.5, 0 },
+    Size = { 375, 99.61482737905934 },
+    ZOrder = 4,
+    Image = LogoSvg,
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 7, 106 },
+    Size = { 380, 22 },
+    ZOrder = 5,
+    Text = "Frame",
+    Font = "Roboto",
+    FontSize = 20,
+    Color = Black,
+    HTextAlign = "Left",
+    FontStyle = "Medium",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 205, 423 },
+    Size = { 180, 16 },
+    ZOrder = 6,
+    Text = "Version " .. PluginInfo.Version,
+    Font = "Roboto",
+    FontSize = 10,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Header",
+    Position = { 35, 140 },
+    Size = { 330, 16 },
+    ZOrder = 7,
+    Text = "Art Mode",
+    Font = "Roboto",
+    FontSize = 14,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 170 },
+    Size = { 140, 20 },
+    ZOrder = 8,
+    Text = "Art Mode On:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 195 },
+    Size = { 140, 20 },
+    ZOrder = 9,
+    Text = "Art Mode Off:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 220 },
+    Size = { 140, 20 },
+    ZOrder = 10,
+    Text = "Read Art Mode:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 255 },
+    Size = { 140, 20 },
+    ZOrder = 11,
+    Text = "Reported Art Mode:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 30, 280 },
+    Size = { 140, 20 },
+    ZOrder = 12,
+    Text = "Feedback valid:",
+    Font = "Roboto",
+    FontSize = 13,
+    Color = Black,
+    HTextAlign = "Right",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 25, 370 },
+    Size = { 350, 20 },
+    ZOrder = 13,
+    Text = "On / Off is shown only after a TV status reply.",
+    Font = "Roboto",
+    FontSize = 11,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  table.insert(graphics, {
+    Type = "Label",
+    Position = { 25, 395 },
+    Size = { 350, 20 },
+    ZOrder = 14,
+    Text = "Frame Art API support varies by model and firmware.",
+    Font = "Roboto",
+    FontSize = 11,
+    Color = Black,
+    HTextAlign = "Center",
+  })
+  layout["ArtOn"] = {
+    PrettyName = "Frame~Art Mode On",
+    Position = { 180, 170 },
+    Size = { 45, 20 },
+    ZOrder = 1000,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["ArtOff"] = {
+    PrettyName = "Frame~Art Mode Off",
+    Position = { 180, 195 },
+    Size = { 45, 20 },
+    ZOrder = 1001,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["ArtRefresh"] = {
+    PrettyName = "Frame~Read Art Mode",
+    Position = { 180, 220 },
+    Size = { 45, 20 },
+    ZOrder = 1002,
+    Color = White,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Button",
+    ButtonStyle = "Trigger",
+    CornerRadius = 2,
+    Margin = 2,
+  }
+  layout["ArtState"] = {
+    PrettyName = "Frame~Reported Art Mode",
+    Position = { 180, 255 },
+    Size = { 185, 20 },
+    ZOrder = 1003,
+    Color = ReadoutGray,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Meter",
+    HTextAlign = "Left",
+  }
+  layout["ArtValid"] = {
+    PrettyName = "Frame~Art Mode feedback valid",
+    Position = { 180, 280 },
+    Size = { 20, 20 },
+    ZOrder = 1004,
+    Color = IndicatorGreen,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Led",
+    TextBoxStyle = "Normal",
+  }
+  layout["ArtStatus"] = {
+    PrettyName = "Frame~Art channel status",
+    Position = { 25, 315 },
+    Size = { 350, 45 },
+    ZOrder = 1005,
+    Color = ReadoutGray,
+    Font = "Roboto",
+    FontSize = 12,
+    Style = "Text",
+    TextBoxStyle = "Normal",
+  }
+end
+
+--*** Runtime ***
+if Controls then
+  Json = require("rapidjson")
+
+  --*** Control aliases and persistent state ***
+  StoredToken = PairingStorage["text.1"]
+  StoredIdentity = PairingStorage["text.2"]
+  WantConnect = false
+  Host = ""
+  Client = ""
+  Protocol = "wss"
+  Port = 8002
+  Queue = {}
+  QueueWaiting = false
+  ArtRequestId = nil
+  ArtSequence = 0
+  ArtSessionId = ""
+  DebugTx = false
+  DebugRx = false
+  DebugFunction = false
+
+  --*** Long-lived host objects ***
+  Channels = {
+    Remote = {
+      Name = "Remote",
+      Endpoint = "samsung.remote.control",
+      Status = Controls.Status,
+      Timeout = Timer.New(),
+      Retry = Timer.New(),
+      Ping = Timer.New(),
+      Ready = false,
+      Authorized = false,
+      Blocked = false,
+      RetryDelay = 5,
+    },
+    Art = {
+      Name = "Art",
+      Endpoint = "com.samsung.art-app",
+      Status = Controls.ArtStatus,
+      Timeout = Timer.New(),
+      Retry = Timer.New(),
+      Ping = Timer.New(),
+      Ready = false,
+      Authorized = false,
+      Blocked = false,
+      RetryDelay = 5,
+    },
+  }
+  WakeSocket = UdpSocket.New()
+  QueueTimer = Timer.New()
+  ArtPollTimer = Timer.New()
+  ArtReplyTimer = Timer.New()
+  ArtQueryTimer = Timer.New()
+  ArtFreshTimer = Timer.New()
+
+  --*** Protocol limits and recognized events ***
+  MaxMessageBytes = 65536
+  MaxQueue = 16
+  KnownEvents = {
+    ["ms.channel.connect"] = true,
+    ["ms.channel.ready"] = true,
+    ["ms.channel.unauthorized"] = true,
+    ["ms.channel.timeOut"] = true,
+    ["ms.error"] = true,
+    ["d2d_service_message"] = true,
+  }
+
+  --*** Utility and state functions ***
+  function Trim(value)
+    return (value:gsub("^%s+", ""):gsub("%s+$", ""))
+  end
+
+  function Trace(name)
+    if DebugFunction then
+      print("Function: " .. name)
+    end
+  end
+
+  function SetupDebug()
+    local mode = Properties["Debug Print"].Value
+    DebugTx = mode == "Tx" or mode == "Tx/Rx" or mode == "All"
+    DebugRx = mode == "Rx" or mode == "Tx/Rx" or mode == "All"
+    DebugFunction = mode == "Function Calls" or mode == "All"
+  end
+
+  function SetStatus(channel, value, message)
+    channel.Status.Value = value
+    channel.Status.String = message
+  end
+
+  function Notice(message)
+    Controls.LastEvent.String = message
+    print(message)
+  end
+
+  function ClearArtState()
+    ArtFreshTimer:Stop()
+    Controls.ArtValid.Boolean = false
+    Controls.ArtState.String = ""
+  end
+
+  function UpdateEnabled()
+    Controls.Connected.Boolean = Channels.Remote.Ready
+    for name in pairs(RemoteKeys) do
+      Controls[name].IsDisabled = not Channels.Remote.Ready
+    end
+    Controls.SendKey.IsDisabled = not Channels.Remote.Ready
+    Controls.LaunchApp.IsDisabled = not Channels.Remote.Ready
+    for _, name in ipairs({ "ArtOn", "ArtOff", "ArtRefresh" }) do
+      Controls[name].IsDisabled = not Channels.Art.Ready
+    end
+    Controls.TokenSaved.Boolean = StoredToken.String ~= ""
+  end
+
+  function ClearQueue()
+    QueueTimer:Stop()
+    Queue = {}
+    QueueWaiting = false
+  end
+
+  function StopChannel(channel)
+    channel.Timeout:Stop()
+    channel.Retry:Stop()
+    channel.Ping:Stop()
+    channel.Ready = false
+    channel.Authorized = false
+    channel.Open = false
+    channel.AwaitingPong = false
+    local socket = channel.Socket
+    channel.Socket = nil
+    if socket then
+      -- Invalidate identity before Close: synchronous or late callbacks are stale.
+      pcall(function()
+        socket:Close()
+      end)
+    end
+    if channel == Channels.Remote then
+      ClearQueue()
+    else
+      ArtPollTimer:Stop()
+      ArtReplyTimer:Stop()
+      ArtQueryTimer:Stop()
+      ArtRequestId = nil
+      ClearArtState()
+    end
+    UpdateEnabled()
+  end
+
+  function FailChannel(channel, message, block)
+    Trace("FailChannel " .. channel.Name)
+    local mayRetry = channel == Channels.Art or StoredToken.String ~= "" or channel.Authorized
+    StopChannel(channel)
+    channel.Blocked = block == true
+    SetStatus(channel, 2, message)
+    Notice(channel.Name .. ": " .. message)
+    if channel == Channels.Remote then
+      StopChannel(Channels.Art)
+      SetStatus(
+        Channels.Art,
+        Properties["Frame Art Mode"].Value and 2 or 3,
+        Properties["Frame Art Mode"].Value and "Remote connection unavailable"
+          or "Art Mode disabled"
+      )
+    end
+    if WantConnect and not channel.Blocked and mayRetry then
+      channel.Retry:Start(channel.RetryDelay)
+      channel.RetryDelay = math.min(channel.RetryDelay * 2, 60)
+    end
+  end
+
+  function Decode(data)
+    if type(data) ~= "string" or #data > MaxMessageBytes then
+      return nil
+    end
+    local ok, result = pcall(Json.decode, data)
+    if ok and type(result) == "table" then
+      return result
+    end
+    return nil
+  end
+
+  function UrlEncode(value)
+    return (
+      value:gsub("([^%w%-._~])", function(char)
+        return string.format("%%%02X", string.byte(char))
+      end)
+    )
+  end
+
+  function SaveToken(message)
+    local data = message.data
+    if Protocol == "wss" and type(data) == "table" then
+      local token = data.token
+      if type(token) == "number" then
+        token = tostring(token)
+      end
+      if type(token) == "string" and #token > 0 and #token <= 512 and not token:find("%c") then
+        StoredToken.String = token
+      end
+    end
+    UpdateEnabled()
+  end
+
+  function WriteMessage(channel, message, label)
+    if not channel.Ready or not channel.Socket then
+      Notice(channel.Name .. ": command not sent; channel is not ready")
+      return false
+    end
+    local encoded, payload = pcall(Json.encode, message)
+    if not encoded or type(payload) ~= "string" or #payload > MaxMessageBytes then
+      Notice(channel.Name .. ": command encoding failed")
+      return false
+    end
+    local ok = pcall(function()
+      channel.Socket:Write(payload, false)
+    end)
+    if not ok then
+      FailChannel(channel, "Write failed; unsent commands discarded", false)
+      return false
+    end
+    Controls.LastCommand.String = label
+    if DebugTx then
+      -- This payload contains commands only; connection URLs/tokens are never logged.
+      print("Tx " .. channel.Name .. ": " .. payload)
+    end
+    return true
+  end
+
+  --*** Remote command pacing: no offline queue and no replay ***
+  function DrainQueue()
+    QueueTimer:Stop()
+    QueueWaiting = false
+    if not Channels.Remote.Ready then
+      ClearQueue()
+      return
+    end
+    local command = table.remove(Queue, 1)
+    if command and WriteMessage(Channels.Remote, command.Message, command.Label) then
+      QueueWaiting = true
+      QueueTimer:Start(Properties["Command Interval"].Value)
+    end
+  end
+
+  function Enqueue(message, label)
+    if not Channels.Remote.Ready then
+      Notice("Remote: command not sent; connect and approve on TV first")
+      return
+    end
+    if #Queue >= MaxQueue then
+      Notice("Remote: command not sent; queue is full")
+      return
+    end
+    table.insert(Queue, { Message = message, Label = label })
+    if not QueueWaiting then
+      DrainQueue()
+    end
+  end
+
+  function SendKey(key)
+    Trace("SendKey")
+    if type(key) ~= "string" or #key > 64 or not key:match("^KEY_[A-Z0-9_]+$") then
+      Notice("Remote: enter a KEY_NAME using capital letters, digits and underscores")
+      return
+    end
+    Enqueue({
+      method = "ms.remote.control",
+      params = {
+        Cmd = "Click",
+        DataOfCmd = key,
+        Option = "false",
+        TypeOfRemote = "SendRemoteKey",
+      },
+    }, key)
+  end
+
+  function LaunchApp()
+    Trace("LaunchApp")
+    local appId = Trim(Controls.AppId.String)
+    if #appId < 1 or #appId > 128 or not appId:match("^[%w._%-]+$") then
+      Notice("Remote: enter a valid application ID")
+      return
+    end
+    Enqueue({
+      method = "ms.channel.emit",
+      params = {
+        event = "ed.apps.launch",
+        to = "host",
+        data = { appId = appId, action_type = Properties["App Launch Type"].Value, metaTag = "" },
+      },
+    }, "Launch " .. appId)
+  end
+
+  --*** Frame Art Mode: correlate readback and expire stale feedback ***
+  function ArtRequest(request, value)
+    ArtSequence = ArtSequence + 1
+    local id = ArtSessionId .. string.format("-%012x", ArtSequence)
+    local data = { request = request, id = id, request_id = id }
+    if value then
+      data.value = value
+    end
+    local message = {
+      method = "ms.channel.emit",
+      params = { event = "art_app_request", to = "host", data = Json.encode(data) },
+    }
+    if WriteMessage(Channels.Art, message, request .. (value and (" " .. value) or "")) then
+      return id
+    end
+    return nil
+  end
+
+  function QueryArt()
+    Trace("QueryArt")
+    ArtQueryTimer:Stop()
+    if not Channels.Art.Ready or ArtRequestId then
+      return
+    end
+    ArtRequestId = ArtRequest("get_artmode_status")
+    if ArtRequestId then
+      ArtReplyTimer:Start(8)
+    end
+  end
+
+  function SetArt(value)
+    Trace("SetArt")
+    if not Channels.Art.Ready then
+      Notice("Art: command not sent; Art channel is not ready")
+      return
+    end
+    ArtReplyTimer:Stop()
+    ArtRequestId = nil
+    ClearArtState()
+    if ArtRequest("set_artmode_status", value) then
+      SetStatus(Channels.Art, 3, "Art command sent; awaiting readback")
+      ArtQueryTimer:Start(1)
+    end
+  end
+
+  function ReceiveArt(message)
+    local data = Decode(message.data)
+    if not data then
+      Notice("Art: ignored invalid nested JSON")
+      return
+    end
+    local id = data.request_id or data.id
+    if ArtRequestId and id == ArtRequestId then
+      if data.event == "error" then
+        ArtReplyTimer:Stop()
+        ArtRequestId = nil
+        ClearArtState()
+        SetStatus(Channels.Art, 1, "TV rejected Art status request")
+        Notice("Art: TV rejected status request")
+      elseif data.value == "on" or data.value == "off" then
+        -- Only a matching read request can establish state; a sent command cannot.
+        ArtReplyTimer:Stop()
+        ArtRequestId = nil
+        Controls.ArtState.String = data.value == "on" and "On" or "Off"
+        Controls.ArtValid.Boolean = true
+        ArtFreshTimer:Start(45)
+        SetStatus(Channels.Art, 0, "Art Mode reported " .. data.value)
+      end
+    elseif data.event == "artmode_changed" or data.event == "art_mode_changed" then
+      -- Notifications invalidate readback; query instead of inferring field names.
+      ClearArtState()
+      ArtReplyTimer:Stop()
+      ArtRequestId = nil
+      ArtQueryTimer:Start(0.3)
+    elseif data.event == "error" then
+      ClearArtState()
+      SetStatus(Channels.Art, 1, "TV reported an Art request error")
+      Notice("Art: request rejected by TV")
+    end
+  end
+
+  function ArtReady()
+    Channels.Art.Ready = true
+    Channels.Art.Timeout:Stop()
+    Channels.Art.RetryDelay = 5
+    ArtSessionId = string.format(
+      "%08x-%04x-4000-a000",
+      math.floor(Timer.Now()) % 0x100000000,
+      math.random(0, 65535)
+    )
+    SetStatus(Channels.Art, 5, "Art channel ready; reading state")
+    UpdateEnabled()
+    ArtPollTimer:Start(30)
+    QueryArt()
+  end
+
+  --*** WebSocket lifecycle ***
+  function Receive(channel, data)
+    local message = Decode(data)
+    if not message or type(message.event) ~= "string" then
+      Notice(channel.Name .. ": ignored invalid or oversized event")
+      return
+    end
+    local event = message.event
+    if DebugRx then
+      -- Never print raw responses: connect events contain the pairing token.
+      print("Rx " .. channel.Name .. ": " .. (KnownEvents[event] and event or "other event"))
+    end
+    if event == "ms.channel.unauthorized" or event == "ms.channel.timeOut" then
+      FailChannel(channel, "TV approval denied/timed out; press Connect to retry", true)
+    elseif event == "ms.error" then
+      if not channel.Ready then
+        FailChannel(channel, "TV rejected channel; check API support", true)
+      else
+        SetStatus(channel, 1, "TV reported a command error")
+        Notice(channel.Name .. ": TV reported a command error")
+        if channel == Channels.Art then
+          ClearArtState()
+        end
+      end
+    elseif event == "ms.channel.connect" then
+      if channel.Authorized then
+        return
+      end
+      SaveToken(message)
+      channel.Authorized = true
+      channel.RetryDelay = 5
+      if channel == Channels.Remote then
+        channel.Ready = true
+        channel.Timeout:Stop()
+        SetStatus(channel, 0, "Remote authorized; device state not reported")
+        Notice("Remote: authorized")
+        UpdateEnabled()
+        if Properties["Frame Art Mode"].Value then
+          OpenChannel(Channels.Art)
+        end
+      elseif channel.ServiceReady then
+        ArtReady()
+      end
+    elseif event == "ms.channel.ready" and channel == Channels.Art then
+      channel.ServiceReady = true
+      if channel.Authorized and not channel.Ready then
+        ArtReady()
+      end
+    elseif event == "d2d_service_message" and channel == Channels.Art and channel.Ready then
+      ReceiveArt(message)
+    end
+  end
+
+  function OpenChannel(channel)
+    Trace("OpenChannel " .. channel.Name)
+    if not WantConnect or channel.Blocked or Host == "" then
+      return
+    end
+    if
+      channel == Channels.Art
+      and (not Channels.Remote.Ready or not Properties["Frame Art Mode"].Value)
+    then
+      return
+    end
+    StopChannel(channel)
+    channel.ServiceReady = false
+    channel.Socket = WebSocket.New()
+    channel.Socket.Connected = function(socket)
+      if socket ~= channel.Socket then
+        return
+      end
+      channel.Open = true
+      SetStatus(channel, 5, "Connected; waiting for TV authorization")
+      Notice(channel.Name .. ": socket connected; awaiting authorization")
+      channel.Ping:Start(10)
+    end
+    channel.Socket.Data = function(socket, data)
+      if socket == channel.Socket then
+        Receive(channel, data)
+      end
+    end
+    channel.Socket.Pong = function(socket)
+      if socket == channel.Socket then
+        channel.AwaitingPong = false
+      end
+    end
+    channel.Socket.Error = function(socket)
+      if socket == channel.Socket then
+        -- Q-SYS error text may contain the URL/token; do not expose it.
+        FailChannel(channel, "WebSocket error; check TV address and selected transport", false)
+      end
+    end
+    channel.Socket.Closed = function(socket)
+      if socket == channel.Socket then
+        FailChannel(channel, "Connection closed; device power is unknown", false)
+      end
+    end
+    local path = "/api/v2/channels/"
+      .. channel.Endpoint
+      .. "?name="
+      .. UrlEncode(Crypto.Base64Encode(Client))
+    if Protocol == "wss" and StoredToken.String ~= "" then
+      path = path .. "&token=" .. UrlEncode(StoredToken.String)
+    end
+    SetStatus(channel, 5, "Connecting; approve on TV if prompted")
+    Notice(channel.Name .. ": connecting")
+    channel.Timeout:Start(45)
+    local ok = pcall(function()
+      channel.Socket:Connect(Protocol, Host, path, Port)
+    end)
+    if not ok then
+      FailChannel(channel, "Unable to start WebSocket connection", false)
+    end
+  end
+
+  function Disconnect()
+    Trace("Disconnect")
+    WantConnect = false
+    StopChannel(Channels.Remote)
+    StopChannel(Channels.Art)
+    SetStatus(Channels.Remote, 3, "Disconnected")
+    SetStatus(
+      Channels.Art,
+      3,
+      Properties["Frame Art Mode"].Value and "Disconnected" or "Art Mode disabled"
+    )
+  end
+
+  function Configure()
+    Trace("Configure")
+    Host = Trim(Controls.IPAddress.String):lower()
+    Client = Trim(Controls.ClientName.String)
+    if Client == "" then
+      Client = "Q-SYS Smart TV"
+      Controls.ClientName.String = Client
+    end
+    Protocol = Properties.Transport.Value == "TLS (8002)" and "wss" or "ws"
+    Port = Protocol == "wss" and 8002 or 8001
+    local identity = Protocol .. "|" .. Host .. "|" .. Client
+    if StoredIdentity.String ~= identity then
+      StoredToken.String = ""
+      StoredIdentity.String = identity
+    end
+    UpdateEnabled()
+    if #Host < 1 or #Host > 253 or not Host:match("^[%w][%w.%-]*$") then
+      SetStatus(Channels.Remote, 2, "Enter a TV IPv4 address or hostname, without a URL/port")
+      return false
+    end
+    if #Client > 64 or Client:find("%c") then
+      SetStatus(Channels.Remote, 2, "Controller name must be 1-64 bytes without control characters")
+      return false
+    end
+    return true
+  end
+
+  function Connect()
+    Trace("Connect")
+    Disconnect()
+    Channels.Remote.Blocked = false
+    Channels.Art.Blocked = false
+    Channels.Remote.RetryDelay = 5
+    Channels.Art.RetryDelay = 5
+    if Configure() then
+      WantConnect = true
+      OpenChannel(Channels.Remote)
+    end
+  end
+
+  --*** Wake-on-LAN: explicit command only, never sent by reconnect ***
+  function IsIpv4(address)
+    local a, b, c, d = address:match("^(%d+)%.(%d+)%.(%d+)%.(%d+)$")
+    if not a then
+      return false
+    end
+    for _, part in ipairs({ a, b, c, d }) do
+      if #part > 3 or tonumber(part) > 255 then
+        return false
+      end
+    end
+    return true
+  end
+
+  function Wake()
+    Trace("Wake")
+    local mac = Trim(Controls.MACAddress.String):gsub("[:%-]", "")
+    local address = Trim(Controls.WakeAddress.String)
+    if
+      #mac ~= 12
+      or not mac:match("^%x+$")
+      or mac == "000000000000"
+      or mac:upper() == "FFFFFFFFFFFF"
+    then
+      Notice("Wake: enter the TV's 12-digit MAC address")
+      return
+    end
+    if not IsIpv4(address) then
+      Notice("Wake: enter an IPv4 broadcast address")
+      return
+    end
+    local bytes = mac:gsub("..", function(byte)
+      return string.char(tonumber(byte, 16))
+    end)
+    local packet = string.rep(string.char(255), 6) .. string.rep(bytes, 16)
+    local ok = pcall(function()
+      WakeSocket:Open()
+      WakeSocket:Send(address, 9, packet)
+    end)
+    pcall(function()
+      WakeSocket:Close()
+    end)
+    if ok then
+      Controls.LastCommand.String = "Wake-on-LAN"
+      Notice("Wake: magic packet sent; TV power is not confirmed")
+    else
+      Notice("Wake: UDP send failed; check network settings")
+    end
+  end
+
+  --*** Event handlers ***
+  for _, channel in pairs(Channels) do
+    channel.Timeout.EventHandler = function()
+      channel.Timeout:Stop()
+      FailChannel(
+        channel,
+        "Connection/approval timed out; check TV and press Connect",
+        channel.Open == true
+      )
+    end
+    channel.Retry.EventHandler = function()
+      channel.Retry:Stop()
+      OpenChannel(channel)
+    end
+    channel.Ping.EventHandler = function()
+      if not channel.Socket or not channel.Open then
+        channel.Ping:Stop()
+        return
+      end
+      if channel.AwaitingPong then
+        FailChannel(channel, "Heartbeat timed out", false)
+        return
+      end
+      channel.AwaitingPong = true
+      local ok = pcall(function()
+        channel.Socket:Ping()
+      end)
+      if not ok then
+        FailChannel(channel, "Heartbeat failed", false)
+      end
+    end
+  end
+  QueueTimer.EventHandler = DrainQueue
+  ArtPollTimer.EventHandler = QueryArt
+  ArtQueryTimer.EventHandler = QueryArt
+  ArtReplyTimer.EventHandler = function()
+    ArtReplyTimer:Stop()
+    ArtRequestId = nil
+    ClearArtState()
+    SetStatus(Channels.Art, 1, "Art status timed out; support/state unknown")
+    Notice("Art: status reply timed out")
+  end
+  ArtFreshTimer.EventHandler = function()
+    ClearArtState()
+    SetStatus(Channels.Art, 1, "Art status expired; awaiting fresh readback")
+  end
+  for name, key in pairs(RemoteKeys) do
+    Controls[name].EventHandler = function()
+      SendKey(key)
+    end
+  end
+  Controls.Connect.EventHandler = Connect
+  Controls.Disconnect.EventHandler = Disconnect
+  Controls.PowerOn.EventHandler = Wake
+  Controls.SendKey.EventHandler = function()
+    SendKey(Trim(Controls.CustomKey.String))
+  end
+  Controls.LaunchApp.EventHandler = LaunchApp
+  Controls.ArtOn.EventHandler = function()
+    SetArt("on")
+  end
+  Controls.ArtOff.EventHandler = function()
+    SetArt("off")
+  end
+  Controls.ArtRefresh.EventHandler = QueryArt
+  Controls.ForgetToken.EventHandler = function()
+    Disconnect()
+    StoredToken.String = ""
+    UpdateEnabled()
+    Notice("Pairing token forgotten; press Connect and approve on TV")
+  end
+  Controls.IPAddress.EventHandler = function()
+    Disconnect()
+    if Configure() then
+      SetStatus(Channels.Remote, 3, "TV address changed; press Connect")
+    end
+  end
+  Controls.ClientName.EventHandler = function()
+    Disconnect()
+    if Configure() then
+      SetStatus(Channels.Remote, 3, "Controller name changed; press Connect")
+    end
+  end
+
+  --*** Initialization ***
+  function Initialize()
+    SetupDebug()
+    print("Samsung Smart TV " .. PluginInfo.Version)
+    Controls.LastCommand.String = ""
+    Controls.LastEvent.String = ""
+    if Controls.WakeAddress.String == "" then
+      Controls.WakeAddress.String = "255.255.255.255"
+    end
+    Disconnect()
+    if Configure() then
+      if StoredToken.String ~= "" then
+        Connect()
+      else
+        SetStatus(Channels.Remote, 3, "Press Connect / Pair")
+      end
+    end
+  end
+  Initialize()
+end
