@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>JoshuaSmall.Qsys.SamsungSmartTV</id>
+    <version>1.0.0.3</version>
+    <title>Samsung Smart TV API</title>
+    <authors>Joshua Small</authors>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/joshua-small/qsys-samsung-smart-tv</projectUrl>
+    <iconUrl>https://joshua-small.github.io/qsys-samsung-smart-tv/icon.png</iconUrl>
+    <description>Samsung Tizen Smart TV WebSocket remote and Frame Art Mode control for Q-SYS.</description>
+    <tags>Q-SYS Plugin SamsungSmartTV</tags>
+    <repository type="git" url="https://github.com/joshua-small/qsys-samsung-smart-tv" />
+  </metadata>
+</package>
