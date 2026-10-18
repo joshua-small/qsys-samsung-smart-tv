@@ -2,8 +2,8 @@
 -- External Tizen v2 WebSocket control, separate from the in-TV webapis SDK.
 PluginInfo = {
   Name = "Samsung~Smart TV",
-  Version = "1.0.0.2",
-  BuildVersion = "1.0.0.2",
+  Version = "1.0.0.3",
+  BuildVersion = "1.0.0.3",
   Id = "93bb7a51-4382-49b8-9133-0aaaf05d1a46",
   Author = "Joshua Small",
   Manufacturer = "Samsung",

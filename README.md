@@ -2,7 +2,7 @@
 
 Control Samsung TVs exposing the local Tizen v2 WebSocket remote interface, including Frame Art Mode On, Off and reported status. This is the external network interface; it does not run Samsung's TV-side Product API. No SmartThings account, API key, external server or TV-side app is required.
 
-Plugin and package version: **1.0.0.2**.
+Plugin and package version: **1.0.0.3**.
 
 ## Install with Q-SYS Library
 

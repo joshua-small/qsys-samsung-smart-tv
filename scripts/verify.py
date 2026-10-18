@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 source = (root / "content/SamsungSmartTV.qplug").read_bytes()
-assert hashlib.sha256(source).hexdigest() == "be02405496d2d00b3dcd284e8709c4368ccde7c4b55569193653592f62f23ec3", "Update the reviewed source digest for an intentional plugin revision"
+assert hashlib.sha256(source).hexdigest() == "b3b5c36d46360a0a191e5e7bdce3ef9dea370c1ee6ae4dc4ef0e3ee71d9756e9", "Update the reviewed source digest for an intentional plugin revision"
 info = re.search(r"PluginInfo\s*=\s*\{(.*?)\}", source.decode("utf-8-sig"), re.S)[1]
 version = re.search(r'\bVersion\s*=\s*"([^"]+)"', info)[1]
 project = ET.parse(root / "SamsungSmartTV.csproj").getroot()
